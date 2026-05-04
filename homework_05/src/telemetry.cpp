@@ -93,6 +93,10 @@ Frame parse_frame(char line[]) {
 }
 
 double compute_frame_rate_hz(const Frame frames[], int frame_count) {
+    if (frames[frame_count - 1].timestamp_ms - frames[0].timestamp_ms <= 0) {
+        std::cerr << "error: invalid time delta between first and last frame\n";
+        return -1.0; //Враховуючи, що частота кадрів не може бути від'ємною, повертаємо -1.0 для позначення помилки.
+    }
     const long elapsed_ms = frames[frame_count - 1].timestamp_ms - frames[0].timestamp_ms;
 
     return static_cast<double>((frame_count - 1) * 1000 / elapsed_ms);

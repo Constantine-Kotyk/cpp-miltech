@@ -15,6 +15,8 @@ int main(int argc, char** argv) {
         return 1;
 
     const Summary summary = summarize(frames, frame_count);
+    if (summary.frame_rate_hz < 0.0) 
+        return 1;
     print_summary(summary);
 
     return 0;
