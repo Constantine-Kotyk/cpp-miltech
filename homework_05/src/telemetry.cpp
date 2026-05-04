@@ -38,29 +38,31 @@ int split_line(char line[], char* fields[], int max_fields) {
     return count;
 }
 
-long parse_long(const char* text) {
+long parse_long(const char* text, bool* success) {
     char* end = nullptr;
-    const long value = std::strtol(text, &end, 10);
+    long value = std::strtol(text, &end, 10);
 
     if (end == text) {
-        std::abort();
+        std::cerr << "error: failed to parse long integer from text: " << text << '\n';
+        *success = false;
     }
 
     return value;
 }
 
-int parse_int(const char* text) {
-    return static_cast<int>(parse_long(text));
+int parse_int(const char* text, bool* success) {
+    return static_cast<int>(parse_long(text, success));
 }
 
-double parse_double(const char* text) {
+double parse_double(const char* text, bool* success) {
     char* end = nullptr;
-    const double value = std::strtod(text, &end);
+    double value = std::strtod(text, &end);
 
     if (end == text) {
-        std::abort();
+        std::cerr << "error: failed to parse double from text: " << text << '\n';
+        *success = false;
     }
-
+    
     return value;
 }
 
@@ -76,13 +78,17 @@ Frame parse_frame(char line[]) {
     }
 
     frame.status = 0;
-    frame.timestamp_ms = parse_long(fields[0]);
-    frame.seq = parse_int(fields[1]);
-    frame.voltage_v = parse_double(fields[2]);
-    frame.current_a = parse_double(fields[3]);
-    frame.temperature_c = parse_double(fields[4]);
-    frame.gps_fix = parse_int(fields[5]);
-    frame.satellites = parse_int(fields[6]);
+    bool field_success = true;
+    frame.timestamp_ms = parse_long(fields[0], &field_success);
+    frame.seq = parse_int(fields[1], &field_success);
+    frame.voltage_v = parse_double(fields[2], &field_success);
+    frame.current_a = parse_double(fields[3], &field_success);
+    frame.temperature_c = parse_double(fields[4], &field_success);
+    frame.gps_fix = parse_int(fields[5], &field_success);
+    frame.satellites = parse_int(fields[6], &field_success);
+    if (!field_success) {
+        frame.status = -1;
+    }
     return frame;
 }
 
