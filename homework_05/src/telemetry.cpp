@@ -38,49 +38,65 @@ int split_line(char line[], char* fields[], int max_fields) {
     return count;
 }
 
-long parse_long(const char* text) {
+long parse_long(const char* text, bool* success) {
     char* end = nullptr;
-    const long value = std::strtol(text, &end, 10);
+    long value = std::strtol(text, &end, 10);
 
     if (end == text) {
-        std::abort();
+        std::cerr << "error: failed to parse long integer from text: " << text << '\n';
+        *success = false;
     }
 
     return value;
 }
 
-int parse_int(const char* text) {
-    return static_cast<int>(parse_long(text));
+int parse_int(const char* text, bool* success) {
+    return static_cast<int>(parse_long(text, success));
 }
 
-double parse_double(const char* text) {
+double parse_double(const char* text, bool* success) {
     char* end = nullptr;
-    const double value = std::strtod(text, &end);
+    double value = std::strtod(text, &end);
 
     if (end == text) {
-        std::abort();
+        std::cerr << "error: failed to parse double from text: " << text << '\n';
+        *success = false;
     }
-
+    
     return value;
 }
 
 Frame parse_frame(char line[]) {
     char* fields[EXPECTED_FIELD_COUNT] = {};
     const int field_count = split_line(line, fields, EXPECTED_FIELD_COUNT);
-    (void)field_count;
-
+    
     Frame frame{};
-    frame.timestamp_ms = parse_long(fields[0]);
-    frame.seq = parse_int(fields[1]);
-    frame.voltage_v = parse_double(fields[2]);
-    frame.current_a = parse_double(fields[3]);
-    frame.temperature_c = parse_double(fields[4]);
-    frame.gps_fix = parse_int(fields[5]);
-    frame.satellites = parse_int(fields[6]);
+    if(field_count != EXPECTED_FIELD_COUNT) {
+        std::cerr << "error: expected " << EXPECTED_FIELD_COUNT << " fields, but got " << field_count << '\n';
+        frame.status = -1;
+        return frame;
+    }
+
+    frame.status = 0;
+    bool field_success = true;
+    frame.timestamp_ms = parse_long(fields[0], &field_success);
+    frame.seq = parse_int(fields[1], &field_success);
+    frame.voltage_v = parse_double(fields[2], &field_success);
+    frame.current_a = parse_double(fields[3], &field_success);
+    frame.temperature_c = parse_double(fields[4], &field_success);
+    frame.gps_fix = parse_int(fields[5], &field_success);
+    frame.satellites = parse_int(fields[6], &field_success);
+    if (!field_success) {
+        frame.status = -1;
+    }
     return frame;
 }
 
 double compute_frame_rate_hz(const Frame frames[], int frame_count) {
+    if (frames[frame_count - 1].timestamp_ms - frames[0].timestamp_ms <= 0) {
+        std::cerr << "error: invalid time delta between first and last frame\n";
+        return -1.0; //Враховуючи, що частота кадрів не може бути від'ємною, повертаємо -1.0 для позначення помилки.
+    }
     const long elapsed_ms = frames[frame_count - 1].timestamp_ms - frames[0].timestamp_ms;
 
     return static_cast<double>((frame_count - 1) * 1000 / elapsed_ms);
@@ -103,6 +119,36 @@ int read_frames(const char* path, Frame frames[], int max_frames) {
 
         if (frame_count < max_frames) {
             frames[frame_count] = parse_frame(line);
+            if (frames[frame_count].status < 0) 
+                return -1;
+
+            if (frame_count > 0) {
+                if (frames[frame_count].timestamp_ms < frames[frame_count - 1].timestamp_ms) {
+                    std::cerr << "error: frame timestamps must be in increasing order\n";
+                    return -1;
+                }
+                if (frames[frame_count].seq < frames[frame_count - 1].seq) {
+                    std::cerr << "error: frame sequence numbers must be in increasing order\n";
+                    return -1;
+                }
+            }
+            if (frames[frame_count].voltage_v <= 0.0) {
+                std::cerr << "error: voltage must be positive\n";
+                return -1;
+            }
+            if (frames[frame_count].temperature_c < -40.0 || frames[frame_count].temperature_c > 120.0) {
+                std::cerr << "error: temperature out of range\n";
+                return -1;
+            }
+            if (frames[frame_count].gps_fix < 0 || frames[frame_count].gps_fix > 1) {
+                std::cerr << "error: gps fix out of range\n";
+                return -1;
+            }
+            if (frames[frame_count].satellites < 0) {
+                std::cerr << "error: satellite count less than zero\n";
+                return -1;
+            }
+
             ++frame_count;
         }
     }
@@ -112,6 +158,13 @@ int read_frames(const char* path, Frame frames[], int max_frames) {
 
 Summary summarize(const Frame frames[], int frame_count) {
     Summary summary{};
+
+    if (frame_count == 0) {
+        std::cerr << "error: no frames to summarize\n";
+        summary.frame_rate_hz = -1.0; //Враховуючи, що частота кадрів не може бути від'ємною, повертаємо -1.0 для позначення помилки.
+        return summary;
+    }
+
     summary.frames_total = frame_count;
     summary.frames_valid = frame_count;
     summary.voltage_min = frames[0].voltage_v;

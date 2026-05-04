@@ -5,6 +5,7 @@ const int MAX_TELEMETRY_FRAMES = 128;
 
 // One telemetry sample from the input log.
 struct Frame {
+    int status;
     long timestamp_ms;
     int seq;
     double voltage_v;
