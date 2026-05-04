@@ -121,6 +121,34 @@ int read_frames(const char* path, Frame frames[], int max_frames) {
             frames[frame_count] = parse_frame(line);
             if (frames[frame_count].status < 0) 
                 return -1;
+
+            if (frame_count > 0) {
+                if (frames[frame_count].timestamp_ms < frames[frame_count - 1].timestamp_ms) {
+                    std::cerr << "error: frame timestamps must be in increasing order\n";
+                    return -1;
+                }
+                if (frames[frame_count].seq < frames[frame_count - 1].seq) {
+                    std::cerr << "error: frame sequence numbers must be in increasing order\n";
+                    return -1;
+                }
+            }
+            if (frames[frame_count].voltage_v <= 0.0) {
+                std::cerr << "error: voltage must be positive\n";
+                return -1;
+            }
+            if (frames[frame_count].temperature_c < -40.0 || frames[frame_count].temperature_c > 120.0) {
+                std::cerr << "error: temperature out of range\n";
+                return -1;
+            }
+            if (frames[frame_count].gps_fix < 0 || frames[frame_count].gps_fix > 1) {
+                std::cerr << "error: gps fix out of range\n";
+                return -1;
+            }
+            if (frames[frame_count].satellites < 0) {
+                std::cerr << "error: satellite count less than zero\n";
+                return -1;
+            }
+
             ++frame_count;
         }
     }
