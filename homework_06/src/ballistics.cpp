@@ -1,6 +1,13 @@
 #include "ballistics.hpp"
 
+#include <cstdlib>
 #include <cstring>
+#include <fstream>
+
+
+const int EXPECTED_FIELD_COUNT = 8;
+const int MAX_LINE_LENGTH = 256;
+
 
 bool getAmmoParams(const char* ammo_name, float& m, float& d, float& l) {
     if (strcmp(ammo_name, "VOG-17") == 0) {
@@ -38,8 +45,8 @@ bool getAmmoParams(const char* ammo_name, float& m, float& d, float& l) {
     }
 }
 
-int calcBallistics(DroneParams& dP, float& h, float& D) {
-    float m, d, l;
+int calcBallistics(DroneParams& dP, Solution& solution) {
+    float m, d, l, h, D;
 
     if (!getAmmoParams(dP.ammo_name, m, d, l)) 
         return UNKNOWN_AMMO;
@@ -70,6 +77,92 @@ int calcBallistics(DroneParams& dP, float& h, float& D) {
     if (!(D > 0))
         return D_MUST_BE_POSITIVE;
 
-    return 0;
+    if (h + dP.accelerationPath > D) {
+        dP.xd = dP.targetX - (dP.targetX - dP.xd) * (h + dP.accelerationPath) / D;
+        dP.yd = dP.targetY - (dP.targetY - dP.yd) * (h + dP.accelerationPath) / D;
+
+        solution.midX = dP.xd;
+        solution.midY = dP.yd;
+        solution.hasMidPoint = true;
+
+        D = sqrt((dP.targetX - dP.xd) * (dP.targetX - dP.xd) + (dP.targetY - dP.yd) * (dP.targetY - dP.yd));
+
+        if (!(D > 0)) 
+            return D_MUST_BE_POSITIVE;
+    }
+
+    double ratio = (D - h) / D;
+    solution.fireX = dP.xd + (dP.targetX - dP.xd) * ratio;
+    solution.fireY = dP.yd + (dP.targetY - dP.yd) * ratio;
+
+    return SUCCESS;
 }
 
+
+int split_line(char line[], char* fields[], int max_fields) {
+    int count = 0;
+    char* cursor = line;
+
+    while (*cursor != '\0' && count < max_fields) {
+        while (*cursor == ' ' || *cursor == '\t' || *cursor == '\n' || *cursor == '\r') {
+            *cursor = '\0';
+            ++cursor;
+        }
+
+        if (*cursor == '\0') {
+            break;
+        }
+
+        fields[count] = cursor;
+        ++count;
+
+        while (*cursor != '\0' && *cursor != ' ' && *cursor != '\t' && *cursor != '\n' &&
+               *cursor != '\r') {
+            ++cursor;
+        }
+    }
+
+    return count;
+}
+
+float parse_float(const char* text, bool* success) {
+    char* end = nullptr;
+    float value = std::strtof(text, &end);
+
+    if (end == text)
+        *success = false;
+    
+    return value;
+}
+
+int read_data(char* path, DroneParams& dP) {
+    std::ifstream input{path};
+    if (!input) 
+        return FILE_OPEN_FAILED;
+    
+
+    char line[MAX_LINE_LENGTH];
+    input.getline(line, MAX_LINE_LENGTH);
+    input.close();
+
+    char* fields[EXPECTED_FIELD_COUNT] = {};
+    const int field_count = split_line(line, fields, EXPECTED_FIELD_COUNT);
+    
+    if (field_count != EXPECTED_FIELD_COUNT) 
+        return FILE_FIELD_COUNT_MISMATCH;
+
+    bool field_success = true;
+    dP.xd = parse_float(fields[0], &field_success);
+    dP.yd = parse_float(fields[1], &field_success);
+    dP.zd = parse_float(fields[2], &field_success);
+    dP.targetX = parse_float(fields[3], &field_success);
+    dP.targetY = parse_float(fields[4], &field_success);
+    dP.attackSpeed = parse_float(fields[5], &field_success);
+    dP.accelerationPath = parse_float(fields[6], &field_success);
+    strncpy(dP.ammo_name, fields[7], sizeof(dP.ammo_name) - 1);
+    dP.ammo_name[sizeof(dP.ammo_name) - 1] = '\0';
+    if (!field_success) 
+        return FILE_FIELD_PARSE_FAILED;
+    
+    return SUCCESS;
+}

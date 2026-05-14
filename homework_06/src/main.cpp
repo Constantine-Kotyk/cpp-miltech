@@ -1,26 +1,39 @@
 #include "ballistics.hpp"
 
 #include <iostream>
-#include <fstream>
 
 
 int main(int argc, char** argv) {
 
     // The executable expects input file path as an argument
     if (argc != 2) {
-        std::cerr << "usage: balistics_check <input_path>\n";
-        return 1;
+        std::cerr << "usage: balistics_check <input_path>" << std::endl ;
+        return UNSUCCESSFUL;
     }
 
     DroneParams dP;
 
-    std::ifstream in(argv[1]);
-    in >> dP.xd >> dP.yd >> dP.zd >> dP.targetX >> dP.targetY >> dP.attackSpeed >> dP.accelerationPath >> dP.ammo_name;
-    in.close();
+    int result;
+    result = read_data(argv[1], dP);
+    if (result < SUCCESS) {
+        switch (result) {
+            case FILE_OPEN_FAILED:
+                std::cerr << "Failed to open input file!" << std::endl;
+                break;
+            case FILE_FIELD_COUNT_MISMATCH:
+                std::cerr << "Field count in input file does not match expected!" << std::endl;
+                break;
+            case FILE_FIELD_PARSE_FAILED:
+                std::cerr << "Failed to parse fields in input file!" << std::endl;
+                break;
+        }
+        return UNSUCCESSFUL;
+    }
 
-    float h, D;
-    int result = calcBallistics(dP, h, D);
-    if (result < 0) {
+    Solution solution{};
+
+    result = calcBallistics(dP, solution);
+    if (result < SUCCESS) {
         std::cerr << "Ballistics calculation failed: ";
 
         switch (result) {
@@ -37,32 +50,15 @@ int main(int argc, char** argv) {
                 std::cerr << "D must be positive!" << std::endl;
                 break;
         }
-
-        return 1;
+        return UNSUCCESSFUL;
     }
 
-    std::ofstream out("output.txt");
-
-    if (h + dP.accelerationPath > D) {
-        dP.xd = dP.targetX - (dP.targetX - dP.xd) * (h + dP.accelerationPath) / D;
-        dP.yd = dP.targetY - (dP.targetY - dP.yd) * (h + dP.accelerationPath) / D;
-
-        out << dP.xd << " " << dP.yd << " ";
-
-        D = sqrt((dP.targetX - dP.xd) * (dP.targetX - dP.xd) + (dP.targetY - dP.yd) * (dP.targetY - dP.yd));
-
-        if (!(D > 0)) {
-            std::cerr << "D must be positive!" << std::endl;
-            return 1;
-        }
+    if (solution.hasMidPoint) {
+        std::cout << "Fire at: (" << solution.fireX << ", " << solution.fireY << ")" << std::endl;
+        std::cout << "Midpoint: (" << solution.midX << ", " << solution.midY << ")" << std::endl;
+    } else {
+        std::cout << "Fire at: (" << solution.fireX << ", " << solution.fireY << ")" << std::endl;
     }
 
-    double ratio = (D - h) / D;
-    double fireX = dP.xd + (dP.targetX - dP.xd) * ratio;
-    double fireY = dP.yd + (dP.targetY - dP.yd) * ratio;
-
-    out << fireX << " " << fireY;
-    out.close();
-
-    return 0;
+    return SUCCESS;
 }
