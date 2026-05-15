@@ -1,64 +1,71 @@
 #include "ballistics.hpp"
 
 #include <iostream>
+// #include <span>
 
+auto main(int argc, char** argv) -> int
+{
+  // The executable expects input file path as an argument
+  if (argc != 2) {
+    std::cerr << "usage: balistics_check <input_path>\n";
+    return kFailed;
+  }
 
-int main(int argc, char** argv) {
+  // auto args = std::span(argv, static_cast<size_t>(argc));  // NOLINT does not work
 
-    // The executable expects input file path as an argument
-    if (argc != 2) {
-        std::cerr << "usage: balistics_check <input_path>" << std::endl ;
-        return UNSUCCESSFUL;
+  DroneParams d_p{};
+
+  int result{0};
+  result = read_data(argv[1], d_p);  // NOLINT - argv[1] is the input file path
+  if (result < kSuccess) {
+    switch (result) {
+      case kFileOpenFailed:
+        std::cerr << "Failed to open input file!\n";
+        break;
+      case kFileFieldCountMismatch:
+        std::cerr << "Field count in input file does not match expected!\n";
+        break;
+      case kFileFieldParseFailed:
+        std::cerr << "Failed to parse fields in input file!\n";
+        break;
+      default:
+        std::cerr << "Unknown error while reading input file!\n";
     }
+    return kFailed;
+  }
 
-    DroneParams dP;
+  Solution solution{};
 
-    int result;
-    result = read_data(argv[1], dP);
-    if (result < SUCCESS) {
-        switch (result) {
-            case FILE_OPEN_FAILED:
-                std::cerr << "Failed to open input file!" << std::endl;
-                break;
-            case FILE_FIELD_COUNT_MISMATCH:
-                std::cerr << "Field count in input file does not match expected!" << std::endl;
-                break;
-            case FILE_FIELD_PARSE_FAILED:
-                std::cerr << "Failed to parse fields in input file!" << std::endl;
-                break;
-        }
-        return UNSUCCESSFUL;
+  result = calc_ballistics(d_p, solution);
+  if (result < kSuccess) {
+    std::cerr << "Ballistics calculation failed: ";
+
+    switch (result) {
+      case kUnknownAmmo:
+        std::cerr << "Unknown ammunition!\n";
+        break;
+      case kTMustBePositive:
+        std::cerr << "t must be positive!\n";
+        break;
+      case kHMustBePositive:
+        std::cerr << "h must be positive!\n";
+        break;
+      case kDMustBePositive:
+        std::cerr << "D must be positive!\n";
+        break;
+      default:
+        std::cerr << "Unknown error!\n";
     }
+    return kFailed;
+  }
 
-    Solution solution{};
+  if (solution.has_mid_point_) {
+    std::cout << "Fire at: (" << solution.fire_x_ << ", " << solution.fire_y_ << ")\n";
+    std::cout << "Midpoint: (" << solution.mid_x_ << ", " << solution.mid_y_ << ")\n";
+  }
+  else {
+    std::cout << "Fire at: (" << solution.fire_x_ << ", " << solution.fire_y_ << ")\n";
+  }
 
-    result = calcBallistics(dP, solution);
-    if (result < SUCCESS) {
-        std::cerr << "Ballistics calculation failed: ";
-
-        switch (result) {
-            case UNKNOWN_AMMO:
-                std::cerr << "Unknown ammunition!" << std::endl;
-                break;
-            case T_MUST_BE_POSITIVE:
-                std::cerr << "t must be positive!" << std::endl;
-                break;
-            case H_MUST_BE_POSITIVE:
-                std::cerr << "h must be positive!" << std::endl;
-                break;
-            case D_MUST_BE_POSITIVE:
-                std::cerr << "D must be positive!" << std::endl;
-                break;
-        }
-        return UNSUCCESSFUL;
-    }
-
-    if (solution.hasMidPoint) {
-        std::cout << "Fire at: (" << solution.fireX << ", " << solution.fireY << ")" << std::endl;
-        std::cout << "Midpoint: (" << solution.midX << ", " << solution.midY << ")" << std::endl;
-    } else {
-        std::cout << "Fire at: (" << solution.fireX << ", " << solution.fireY << ")" << std::endl;
-    }
-
-    return SUCCESS;
+  return kSuccess;
 }

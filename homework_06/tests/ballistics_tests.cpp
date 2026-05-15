@@ -2,49 +2,54 @@
 #include <cstring>
 #include "ballistics.hpp"
 
-TEST(BallisticsTest, ReadDataSuccess) {
-    DroneParams dP;
-    char path[] = TEST_DATA_DIR "/good.txt";
-    EXPECT_EQ(read_data(path, dP), SUCCESS);
+TEST(BallisticsTest, ReadDataSuccess)
+{
+  DroneParams dParams;
+  char path[] = TEST_DATA_DIR "/good.txt";
+  EXPECT_EQ(read_data(path, dParams), kSuccess);
 }
 
-TEST(BallisticsTest, ReadEmptyFile) {
-    DroneParams dP;
-    char path[] = TEST_DATA_DIR "/empty.txt";
-    EXPECT_EQ(read_data(path, dP), FILE_FIELD_COUNT_MISMATCH);
+TEST(BallisticsTest, ReadEmptyFile)
+{
+  DroneParams dParams;
+  char path[] = TEST_DATA_DIR "/empty.txt";
+  EXPECT_EQ(read_data(path, dParams), kFileFieldCountMismatch);
 }
 
-TEST(BallisticsTest, ReadDataParseFailure) {
-    DroneParams dP;
-    char path[] = TEST_DATA_DIR "/bad.txt";
-    EXPECT_EQ(read_data(path, dP), FILE_FIELD_PARSE_FAILED);
+TEST(BallisticsTest, ReadDataParseFailure)
+{
+  DroneParams dParams;
+  char path[] = TEST_DATA_DIR "/bad.txt";
+  EXPECT_EQ(read_data(path, dParams), kFileFieldParseFailed);
 }
 
-TEST(BallisticsTest, UnknownAmmo) {
-    DroneParams dP = {0, 0, 0, 10, 10, 100, 0, ""};
-    Solution solution{};
+TEST(BallisticsTest, UnknownAmmo)
+{
+  DroneParams dParams = {0, 0, 0, 10, 10, 100, 0, ""};
+  Solution solution{};
 
-    float m, d, l;
-    const bool result = getAmmoParams("unknown", m, d, l);
+  float m, d, l;
+  const bool result = get_ammo_params("unknown", m, d, l);
 
-    ASSERT_FALSE(result);
+  ASSERT_FALSE(result);
 
-    EXPECT_EQ(calcBallistics(dP, solution), UNKNOWN_AMMO);
+  EXPECT_EQ(calc_ballistics(dParams, solution), kUnknownAmmo);
 }
 
-TEST(BallisticsTest, CalcKnownDropPoint) {
-    DroneParams dP = {
-        .xd = 100.0,
-        .yd = 100.0,
-        .zd = 100.0,
-        .targetX = 200.0,
-        .targetY = 200.0,
-        .attackSpeed = 10.0,
-        .accelerationPath = 10.0,
-        .ammo_name = "VOG-17",
-    };
-    Solution solution;
-    calcBallistics(dP, solution);
-    EXPECT_NEAR(solution.fireX, 173.759, 0.01);
-    EXPECT_NEAR(solution.fireY, 173.759, 0.01);
+TEST(BallisticsTest, CalcKnownDropPoint)
+{
+  DroneParams dParams = {
+    .x_ = 100.0,
+    .y_ = 100.0,
+    .z_ = 100.0,
+    .target_x_ = 200.0,
+    .target_y_ = 200.0,
+    .attack_speed_ = 10.0,
+    .acceleration_path_ = 10.0,
+    .ammo_name_ = "VOG-17",
+  };
+  Solution solution;
+  calc_ballistics(dParams, solution);
+  EXPECT_NEAR(solution.fire_x_, 173.759, 0.01);
+  EXPECT_NEAR(solution.fire_y_, 173.759, 0.01);
 }

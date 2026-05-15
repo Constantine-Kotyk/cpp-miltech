@@ -1,31 +1,34 @@
 #pragma once
 
 #include <cmath>
+#include <cstdint>
 
-#define UNSUCCESSFUL 1
-#define SUCCESS 0
-#define UNKNOWN_AMMO -1
-#define T_MUST_BE_POSITIVE -2
-#define H_MUST_BE_POSITIVE -3
-#define D_MUST_BE_POSITIVE -4
-#define FILE_OPEN_FAILED -5
-#define FILE_FIELD_COUNT_MISMATCH -6
-#define FILE_FIELD_PARSE_FAILED -7
+enum ErrorCode : std::int8_t {
+  kFailed = 1,
+  kSuccess = 0,
+  kUnknownAmmo = -1,
+  kTMustBePositive = -2,
+  kHMustBePositive = -3,
+  kDMustBePositive = -4,
+  kFileOpenFailed = -5,
+  kFileFieldCountMismatch = -6,
+  kFileFieldParseFailed = -7
+};
 
 struct DroneParams {
-    float xd, yd, zd; // coordinates of the drone
-    float targetX, targetY; // coordinates of the target
-    float attackSpeed; // speed of the attack
-    float accelerationPath; // additional distance due to acceleration
-    char ammo_name[11]; // name of the ammunition
+  float x_, y_, z_;
+  float target_x_, target_y_;
+  float attack_speed_;
+  float acceleration_path_;
+  char ammo_name_[11];  // NOLINT - null-terminated string for ammo name
 };
 
 struct Solution {
-    float fireX, fireY;
-    float midX, midY;
-    bool hasMidPoint{false};
+  float fire_x_{0.0F}, fire_y_{0.0F};
+  float mid_x_{0.0F}, mid_y_{0.0F};
+  bool has_mid_point_{false};
 };
 
-bool getAmmoParams(const char* ammo_name, float& m, float& d, float& l);
-int calcBallistics(DroneParams& dP, Solution& solution);
-int read_data(char* path, DroneParams& dP);
+auto get_ammo_params(const char* ammo_name, float& a_m, float& a_d, float& a_l) -> bool;
+auto calc_ballistics(DroneParams& d_params, Solution& solution) -> int;
+auto read_data(char* path, DroneParams& d_params) -> int;

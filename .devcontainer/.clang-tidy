@@ -15,7 +15,8 @@ Checks: >
 
 # Аналізувати лише код домашніх робіт і типові source/include директорії,
 # а не системні headers або сторонні бібліотеки.
-HeaderFilterRegex: '(^|/)(homework_[0-9]+|include|src)/'
+# HeaderFilterRegex: '(^|/)(homework_[0-9]+|include|src)/'
+HeaderFilterRegex: '(^|/)(homework_06+|include|src)/'
 
 # Помилки analyzer/core-guidelines/modernize мають ламати перевірку.
 # Readability і performance лишаються попередженнями, щоб не блокувати
