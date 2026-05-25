@@ -31,6 +31,7 @@ int main(int argc, char* argv[])
     auto* fileConfigLoader = ConfigLoaderFactory::create(ConfigLoaderType::JSON, dataDir + "config.json");
 
     MissionProcessor* mission = MissionBuilder()
+                                    .setMaxSteps(10000)
                                     .setAmmoParams(dataDir + "ammo.json")
                                     .setDroneConfig(fileConfigLoader)
                                     .setBallisticSolver(analytical)
@@ -40,13 +41,13 @@ int main(int argc, char* argv[])
     stepCnt = mission->execute();
     if (stepCnt > 0) {
         LOG("Steps count with JSON file provider: " << stepCnt);
-        mission->writeResult(outputDir + "simulation.json", stepCnt);
+        mission->writeResult(outputDir + "simulation.json");
     }
     mission->changeProvider(testProvider);
     stepCnt = mission->execute();
     if (stepCnt > 0) {
         LOG("Steps count with test provider: " << stepCnt);
-        mission->writeResult(outputDir + "simulation_test.json", stepCnt);
+        mission->writeResult(outputDir + "simulation_test.json");
     }
 
     delete mission;

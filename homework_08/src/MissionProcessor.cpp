@@ -6,7 +6,7 @@
 
 using json = nlohmann::json;
 
-void MissionProcessor::writeResult(const std::string fileName, const int& stepsCount) {
+void MissionProcessor::writeResult(const std::string fileName) {
     std::ofstream fout(fileName);
     if (!fout.is_open()) {
         ERROR("Cannot write results file (\"" << fileName << "\")");
@@ -14,27 +14,29 @@ void MissionProcessor::writeResult(const std::string fileName, const int& stepsC
     }
 
     json out;
-    out["totalSteps"] = stepsCount;
+    out["totalSteps"] = steps.size();
     out["steps"] = json::array();
-    for (int i = 0; i < stepsCount; i++) {
-        json s;
-        s["position"]        = {{"x", steps[i].pos.x}, {"y", steps[i].pos.y}};
-        s["direction"]       = steps[i].direction;
-        s["state"]           = steps[i].state;
-        s["targetIndex"]     = steps[i].targetIdx;
-        s["dropPoint"]       = {{"x", steps[i].dropPoint.x},
-                                {"y", steps[i].dropPoint.y}};
-        s["aimPoint"]        = {{"x", steps[i].aimPoint.x},
-                                {"y", steps[i].aimPoint.y}};
-        s["predictedTarget"] = {{"x", steps[i].predictedTarget.x},
-                                {"y", steps[i].predictedTarget.y}};
-        out["steps"].push_back(s);
-    }
+
+	for(const auto& step : steps) {
+		json s;
+		s["position"]        = {{"x", step.pos.x}, {"y", step.pos.y}};
+		s["direction"]       = step.direction;
+		s["state"]           = step.state;
+		s["targetIndex"]     = step.targetIdx;
+		s["dropPoint"]       = {{"x", step.dropPoint.x},
+								{"y", step.dropPoint.y}};
+		s["aimPoint"]        = {{"x", step.aimPoint.x},
+								{"y", step.aimPoint.y}};
+		s["predictedTarget"] = {{"x", step.predictedTarget.x},
+								{"y", step.predictedTarget.y}};
+		out["steps"].push_back(s);
+	}
+
     fout << out.dump(2);  // 2 = відступ для читабельності
 }
 
 bool MissionProcessor::executeConditions() {
-    if(!ammo) {
+    if(ammo.empty()) {
         LOG("The execution attempt was unsuccessful: ammo configuration is not defined");
         return false;
     }
@@ -99,15 +101,9 @@ int MissionProcessor::execute() {
 
     	selTarget->dir = atan2(selTarget->fp.y - dp.y, selTarget->fp.x - dp.x);
 
-    	steps[step].pos.x = dp.x;
-    	steps[step].pos.y = dp.y;
-    	steps[step].direction = dir;
-    	steps[step].state = curPhase;
-    	steps[step].targetIdx = curTarget;
-    	steps[step].dropPoint = selTarget->fp;
     	Coord dc = { (float)cos(dir), (float)sin(dir) };
-        steps[step].aimPoint = dp + dc * bombDist;
-        steps[step].predictedTarget = selTarget->pp;
+		dc = dp + dc * bombDist;
+		steps.push_back(SimStep({dp.x, dp.y}, dir, curPhase, curTarget, selTarget->fp, dc, selTarget->pp));
 
         DEBUG("[" << step << "] X: " << dp.x << ", Y: " << dp.y);
 
@@ -312,35 +308,26 @@ float MissionProcessor::normalizeAngle(float a) {
 	return a;
 }
 
-AmmoParams* MissionProcessor::readAmmoParams(const std::string fileName, int& ammoCount) {
-    if (this->ammo) delete[] this->ammo; // на той випадок, якщо буде повторний виклик читання параметрів боєприпасів
+void MissionProcessor::readAmmoParams(const std::string fileName) {
+    if (!this->ammo.empty()) this->ammo.clear(); // на той випадок, якщо буде повторний виклик читання параметрів боєприпасів
     std::ifstream f(fileName);
     if (!f.is_open())
-        return nullptr;
+        return;
     json j;
     f >> j;
     f.close();
 
-    ammoCount = (int)j.size();
-    AmmoParams* ammo = new AmmoParams[ammoCount];
-
-    for (int i = 0; i < ammoCount; i++) {
-        ammo[i].name = j[i]["name"];
-        ammo[i].mass = j[i]["mass"];
-        ammo[i].drag = j[i]["drag"];
-        ammo[i].lift = j[i]["lift"];
-    }
-
-    return ammo;
+	for (const auto& item : j) 
+        ammo[item["name"]] = {item["mass"], item["drag"], item["lift"]};
 }
 
 bool MissionProcessor::getBombParams(float& m, float& d, float& l) {
     bool result = false;
-    for(int i = 0; i < ammoParamsCount; ++i) {
-        if (config->getAmmoName()==ammo[i].name) {
-            m = ammo[i].mass;
-            d = ammo[i].drag;
-            l = ammo[i].lift;
+    for(const auto& pair : ammo) {
+        if (config->getAmmoName()==pair.first) {
+            m = pair.second.mass;
+            d = pair.second.drag;
+            l = pair.second.lift;
             result = true;
             break;
         }
