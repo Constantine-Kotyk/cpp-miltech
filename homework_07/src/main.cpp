@@ -238,11 +238,11 @@ public:
 
 class TargetProviderTest : public ITargetProvider { // нерухомі цілі
     int targetsCount{5};
-    int targetsTimeSteps{1};
+    [[maybe_unused]]int targetsTimeSteps{1};
 public:
     TargetProviderTest() {}
     int getTargetCount() override { return targetsCount; }
-    Coord getTargetPosition(int tnum, float curTime, float dt, float arrayTimeStep) override {
+    Coord getTargetPosition(int tnum, [[maybe_unused]]float curTime, [[maybe_unused]]float dt, [[maybe_unused]]float arrayTimeStep) override {
         switch (tnum) {
             case 0: return {300.0f, 300.0f};
             case 1: return {336.8f, 295.0f};
@@ -250,6 +250,7 @@ public:
             case 3: return {334.0f, 305.0f};
             case 4: return {295.0f, 290.0f};
         }
+        return {0.0f, 0.0f};
     }
 };
 
@@ -308,7 +309,7 @@ public:
         steps = new SimStep[maxSteps];
     }
     friend class MissionBuilder;
-    const unsigned getMaxSteps() { return maxSteps; }
+    unsigned getMaxSteps() { return maxSteps; }
     void changeConfig(IConfigLoader* c) { config = c; }
     void changeSolver(IBallisticSolver* s) { solver = s; }
     void changeProvider(ITargetProvider* t) { targets = t; }
@@ -473,7 +474,7 @@ int MissionProcessor::execute() {
     Coord dp = config->getStartPos();
     float dir = config->getInitialDir();
 
-    while (step < maxSteps) {
+    while (step < (int)maxSteps) {
     	selTarget->num = 0;
     	selTarget->time = 1000000;
     	selTarget->fp = dp;
@@ -573,8 +574,9 @@ int MissionProcessor::execute() {
 	   				addPath = (prevSpeed + curSpeed) / 2 * config->getSimTimeStep();
    				}
    				else {
-    				if (fabs(turnAngle) <= config->getTurnThreshold())
+    				if (fabs(turnAngle) <= config->getTurnThreshold()) {
     					dir = selTarget->dir;
+                    }    
    					addPath = curSpeed * config->getSimTimeStep();
    				}
    				break;
@@ -784,7 +786,13 @@ void AnalyticalSolver::calcBalisticTask(const float& m, const float& d, const fl
 
 }
 
-void TableSolver::calcBalisticTask(const float& m, const float& d, const float& l, const float& attackSpeed, const float& zd, float& bombDist, float& bombTime) {
+void TableSolver::calcBalisticTask([[maybe_unused]]const float& m, 
+    [[maybe_unused]]const float& d, 
+    [[maybe_unused]]const float& l, 
+    [[maybe_unused]]const float& attackSpeed, 
+    [[maybe_unused]]const float& zd, 
+    [[maybe_unused]]float& bombDist, 
+    [[maybe_unused]]float& bombTime) {
 
     //solver not implemented yet
 
