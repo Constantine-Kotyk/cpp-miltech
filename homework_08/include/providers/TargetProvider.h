@@ -1,8 +1,8 @@
 #pragma once
 
 #include "interfaces/ITargetProvider.h"
-#include "core/TargetProviderJSON.h"
-#include "core/TargetProviderTest.h"
+#include "providers/TargetProviderJSON.h"
+#include "providers/TargetProviderTest.h"
 #include "core/umacro.h"
 
 enum class ProviderType {JSON, TEST};

@@ -1,13 +1,12 @@
-#include <string>
-
-#include "core/ConfigLoader.h"
-#include "core/TargetProvider.h"
-#include "core/AnalyticalSolver.h"
-#include "core/MissionProcessor.h"
-
 #define ENABLE_LOG	  1
 #define ENABLE_DEBUG  0
 
+#include <string>
+
+#include "config/ConfigLoader.h"
+#include "providers/TargetProvider.h"
+#include "solvers/AnalyticalSolver.h"
+#include "core/MissionProcessor.h"
 #include "core/umacro.h"
 
 int main(int argc, char* argv[])

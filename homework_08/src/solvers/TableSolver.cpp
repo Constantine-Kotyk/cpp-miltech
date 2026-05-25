@@ -1,4 +1,4 @@
-#include "core/TableSolver.h"
+#include "solvers/TableSolver.h"
 
 void TableSolver::calcBalisticTask([[maybe_unused]]const float& m, 
     [[maybe_unused]]const float& d, 

@@ -2,8 +2,8 @@
 
 #include "core/umacro.h"
 #include "interfaces/IConfigLoader.h"
-#include "core/ConfigLoaderJSON.h"
-#include "core/ConfigLoaderTest.h"
+#include "config/ConfigLoaderJSON.h"
+#include "config/ConfigLoaderTest.h"
 
 enum class ConfigLoaderType {JSON, TEST};
 

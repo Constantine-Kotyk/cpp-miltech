@@ -1,4 +1,4 @@
-#include "core/ConfigLoaderJSON.h"
+#include "config/ConfigLoaderJSON.h"
 #include <fstream>
 #include "json.hpp"
 

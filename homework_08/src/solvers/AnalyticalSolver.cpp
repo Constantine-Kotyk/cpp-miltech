@@ -1,5 +1,5 @@
 #include <cmath>
-#include "core/AnalyticalSolver.h"
+#include "solvers/AnalyticalSolver.h"
 
 void AnalyticalSolver::calcBalisticTask(const float& m, const float& d, const float& l, const float& attackSpeed, const float& zd, float& bombDist, float& bombTime) {
 
